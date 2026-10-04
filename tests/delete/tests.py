@@ -474,6 +474,18 @@ class DeletionTests(TestCase):
 
 class FastDeleteTests(TestCase):
 
+    def test_m2m_changed_listener_prevents_fast_delete(self):
+        def receiver(**kwargs):
+            pass
+
+        signal = models.signals.m2m_changed
+        signal.connect(receiver, sender=User)
+        try:
+            collector = Collector(using='default')
+            self.assertFalse(collector.can_fast_delete(User.objects.all()))
+        finally:
+            signal.disconnect(receiver, sender=User)
+
     def test_fast_delete_fk(self):
         u = User.objects.create(
             avatar=Avatar.objects.create()

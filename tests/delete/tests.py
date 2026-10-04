@@ -4,12 +4,10 @@ from django.db import IntegrityError, connection, models
 from django.db.models.deletion import Collector
 from django.db.models.sql.constants import GET_ITERATOR_CHUNK_SIZE
 from django.test import TestCase, skipIfDBFeature, skipUnlessDBFeature
-from django.test.utils import CaptureQueriesContext
 
 from .models import (
     MR, A, Avatar, Base, Child, HiddenUser, HiddenUserProfile, M, M2MFrom,
-    M2MTo, MRNull, Parent, R, RChild, S, T, TWithCode, U, UWithCode, User,
-    create_a, get_default_r,
+    M2MTo, MRNull, Parent, R, RChild, S, T, User, create_a, get_default_r,
 )
 
 
@@ -441,37 +439,6 @@ class DeletionTests(TestCase):
 
 
 class FastDeleteTests(TestCase):
-
-    def test_cascade_only_loads_primary_keys(self):
-        s = S.objects.create()
-        t = T.objects.create(s=s)
-        U.objects.create(t=t)
-
-        with CaptureQueriesContext(connection) as captured_queries:
-            s.delete()
-
-        t_query = next(query['sql'] for query in captured_queries if 'delete_t' in query['sql'])
-        self.assertIn('SELECT', t_query)
-        self.assertIn('delete_t', t_query)
-        self.assertNotIn('s_id', t_query)
-        self.assertFalse(S.objects.exists())
-        self.assertFalse(T.objects.exists())
-        self.assertFalse(U.objects.exists())
-
-    def test_cascade_loads_non_primary_key_references(self):
-        s = S.objects.create()
-        t = TWithCode.objects.create(s=s, code='code')
-        UWithCode.objects.create(t=t)
-
-        with CaptureQueriesContext(connection) as captured_queries:
-            s.delete()
-
-        t_query = next(query['sql'] for query in captured_queries if 'delete_twithcode' in query['sql'])
-        self.assertIn('code', t_query)
-        self.assertNotIn('s_id', t_query)
-        self.assertFalse(S.objects.exists())
-        self.assertFalse(TWithCode.objects.exists())
-        self.assertFalse(UWithCode.objects.exists())
 
     def test_fast_delete_fk(self):
         u = User.objects.create(

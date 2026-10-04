@@ -221,6 +221,13 @@ class Collector:
                     if self.can_fast_delete(sub_objs, from_field=field):
                         self.fast_deletes.append(sub_objs)
                     elif sub_objs:
+                        # The collector only needs primary keys to process
+                        # related objects. Keep loading all fields when delete
+                        # signal listeners may inspect the instances.
+                        if not any(signal.has_listeners(related.related_model) for signal in (
+                                signals.pre_delete, signals.post_delete,
+                                signals.m2m_changed)):
+                            sub_objs = sub_objs.only('pk')
                         field.remote_field.on_delete(self, field, sub_objs, self.using)
             for field in model._meta.private_fields:
                 if hasattr(field, 'bulk_related_objects'):

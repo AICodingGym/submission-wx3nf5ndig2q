@@ -227,7 +227,13 @@ class Collector:
                         if not any(signal.has_listeners(related.related_model) for signal in (
                                 signals.pre_delete, signals.post_delete,
                                 signals.m2m_changed)):
-                            sub_objs = sub_objs.only('pk')
+                            fields = {'pk'}
+                            for relation in get_candidate_relations_to_delete(related.related_model._meta):
+                                fields.update(
+                                    field.name
+                                    for field in relation.field.foreign_related_fields
+                                )
+                            sub_objs = sub_objs.only(*fields)
                         field.remote_field.on_delete(self, field, sub_objs, self.using)
             for field in model._meta.private_fields:
                 if hasattr(field, 'bulk_related_objects'):

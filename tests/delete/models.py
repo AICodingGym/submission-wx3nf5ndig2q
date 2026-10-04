@@ -24,6 +24,15 @@ class U(models.Model):
     t = models.ForeignKey(T, models.CASCADE)
 
 
+class TWithCode(models.Model):
+    s = models.ForeignKey(S, models.CASCADE)
+    code = models.CharField(max_length=20, unique=True)
+
+
+class UWithCode(models.Model):
+    t = models.ForeignKey(TWithCode, models.CASCADE, to_field='code')
+
+
 class RChild(R):
     pass
 

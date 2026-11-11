@@ -2,3 +2,4 @@ time	name	val_mae	val_mae_snapped	runtime_min	device	epochs	params	config	note
 2026-11-10 23:12	gbm_baseline	0.78084	0.78045	2.5	cpu	400 iters	-	HistGB L1, per-row, 34 feats	baseline: no sequence context beyond lag/lead/cumsum features
 2026-11-10 23:27	smoke	0.74807	0.74779	5.1	mps	5	5924097	BiLSTM h256 L4 bs256 lr0.002 do0.0 expw0.0 seed0	timing smoke test
 2026-11-11 00:10	lstm_v1	0.24461	0.2435	42.2	mps	40	5924097	BiLSTM h256 L4 bs256 lr0.002 do0.0 expw0.0 seed0	v1: BiLSTM + target scaling, 40 ep
+2026-11-11 08:17	lstm_v2	0.18868	0.18712	379.1	mps	80	5924097	init=lstm_v1 BiLSTM h256 L4 bs256 lr0.001 do0.0 expw0.0 seed0	v2: warm-start from v1, +80 ep at lr 1e-3 (tests: train longer)

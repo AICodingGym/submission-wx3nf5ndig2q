@@ -21,13 +21,14 @@ nearest of the 950 discrete pressure values seen in train.
 | 0 | `gbm_baseline` | 0.7808 | 0.7804 | 2.5 min | CPU (M2 Pro) | Per-row HistGradientBoosting (L1) on 34 features (u_in lags/leads/diffs, cumulative u_in, dt, R/C one-hots). → Valid pipeline. Error is worst for R=50 (0.92–1.16) and C=10. A per-row model can't carry the breath's history; next: a sequence model. |
 | 1 | `smoke` | 0.7481 | 0.7478 | 5.1 min | MPS | 4-layer BiLSTM (h=256), L1 loss on inspiratory rows, 5 epochs, raw-scale target. → Runs at ~1 min/epoch on the Mac. Epoch-1 train MAE was 5.3: the net spent epochs learning the pressure offset. Next: standardize the target. |
 | 2 | `lstm_v1` | **0.2446** | **0.2435** | 42.2 min | MPS | Same model + output rescaled by train pressure mean/std, 40 epochs, one-cycle LR 2e-3. → 3.2× better than the baseline. Val was 0.353 at epoch 25 and still falling at the end (train 0.204 vs val 0.245), so it is under-trained, with a train/val gap starting to open. Snapping gains ~0.001. Worst settings: R=50,C=20 (0.358) and R=50,C=50 (0.353); best: R=5,C=20 (0.148). |
+| 3 | `lstm_v2` | **0.1887** | **0.1871** | ~95 min training (379 min wall: the Mac slept overnight) | MPS | Warm-start from v1, +80 epochs at lr 1e-3 (hypothesis 1: train longer). → Confirmed: 0.2446 → 0.1887. But train MAE is 0.109 vs val 0.189, so it now overfits; more epochs of the same will give little. R=50,C=20/50 still worst (0.28). Error analysis of v1: median breath MAE 0.147 but the worst 5% of breaths carry 29% of the error; error grows through the breath (0.17 → 0.27); no bias. Next: regularize (dropout), then blend. |
 
 Mid-run crash worth remembering: predicting with batch 1024 ran out of MPS memory; fixed with
 batch 256 + `torch.mps.empty_cache()`.
 
 ## Current best
 
-`lstm_v1` → `submission.csv` (603,600 rows, validated against `sample_submission.csv`).
+`lstm_v2` → `submission.csv` (603,600 rows, validated against `sample_submission.csv`).
 Not yet submitted to AI Coding Gym.
 
 ## Next hypotheses (ordered by expected value per GPU-hour)

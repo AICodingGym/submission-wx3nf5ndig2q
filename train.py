@@ -29,6 +29,7 @@ p.add_argument("--dropout", type=float, default=0.0)
 p.add_argument("--exp_weight", type=float, default=0.0, help="loss weight on expiratory (unscored) rows")
 p.add_argument("--seed", type=int, default=0)
 p.add_argument("--full", action="store_true", help="fit on train+val (no honest val score)")
+p.add_argument("--init", default="", help="warm-start weights from checkpoints/<init>.pt")
 p.add_argument("--note", default="")
 a = p.parse_args()
 
@@ -66,6 +67,8 @@ opt = torch.optim.AdamW(model.parameters(), lr=a.lr, weight_decay=0.0)
 steps = a.epochs * ((len(tr_idx) + a.bs - 1) // a.bs)
 sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=a.lr, total_steps=steps, pct_start=0.1)
 
+if a.init:
+    model.load_state_dict(torch.load(f"checkpoints/{a.init}.pt", map_location=dev)["model"])
 ckpt = f"checkpoints/{a.name}.pt"
 start, elapsed = 0, 0.0
 if os.path.exists(ckpt):  # resume (DataHub containers time out)
@@ -112,7 +115,7 @@ for ep in range(start, a.epochs):
 
 rt = (elapsed + time.time() - t0) / 60
 np.save(f"outputs/{a.name}_test.npy", predict(Xte))
-cfg = f"BiLSTM h{a.hidden} L{a.layers} bs{a.bs} lr{a.lr} do{a.dropout} expw{a.exp_weight} seed{a.seed}"
+cfg = (f"init={a.init} " if a.init else "") + f"BiLSTM h{a.hidden} L{a.layers} bs{a.bs} lr{a.lr} do{a.dropout} expw{a.exp_weight} seed{a.seed}"
 if a.full:
     log_result(name=a.name, val_mae="n/a (full fit)", val_mae_snapped="", runtime_min=round(rt, 1), device=dev,
                epochs=a.epochs, params=nparams, config=cfg, note=a.note)
